@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Website Status Checker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .form-section {
+            padding: 40px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .url-input {
+            flex: 1;
+            min-width: 300px;
+            padding: 15px 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .url-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            color: #333;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .config-section {
+            background: #f8f9fa;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+        }
+
+        .config-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .config-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .config-input {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .result-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-left: 5px solid #667eea;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .status-up { background: #d4edda; color: #155724; }
+        .status-down { background: #f8d7da; color: #721c24; }
+        .status-partial { background: #fff3cd; color: #856404; }
+        .status-mixed { background: #e2e3e5; color: #383d41; }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .check-result {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .check-result h4 {
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .check-details {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .external-checks {
+            margin-top: 20px;
+        }
+
+        .external-check {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .response-time {
+            font-weight: 600;
+            color: #28a745;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            .url-input {
+                min-width: unset;
+            }
+            
+            .config-inputs {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌐 Website Status Checker</h1>
+            <p>Monitor website availability across multiple regions</p>
+        </div>
+
+        <div class="form-section">
+            <div class="config-section">
+                <h3>⚙️ API Configuration</h3>
+                <div class="config-inputs">
+                    <input type="text" id="apiUrl" class="config-input" placeholder="API Gateway URL" value="https://1ysymeast2.execute-api.us-east-2.amazonaws.com/Prod">
+                    <select id="checkType" class="config-input">
+                        <option value="single">Single Region Check</option>
+                        <option value="multi">Multi-Region Check</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <input type="text" id="urlInput" class="url-input" placeholder="Enter website URL (e.g., google.com or https://example.com)" value="google.com">
+                <button onclick="checkWebsite()" class="btn btn-primary" id="checkBtn">Check Status</button>
+                <button onclick="clearResults()" class="btn btn-secondary">Clear Results</button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Checking website status...</p>
+        </div>
+
+        <div class="results" id="results">
+            <div id="resultsContent"></div>
+        </div>
+    </div>
+
+    <script>
+        async function checkWebsite() {
+            const url = document.getElementById('urlInput').value.trim();
+            const apiUrl = document.getElementById('apiUrl').value.trim();
+            const checkType = document.getElementById('checkType').value;
+            
+            if (!url) {
+                alert('Please enter a website URL');
+                return;
+            }
+
+            if (!apiUrl) {
+                alert('Please enter your API Gateway URL');
+                return;
+            }
+
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const checkBtn = document.getElementById('checkBtn');
+            
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            checkBtn.disabled = true;
+
+            try {
+                const endpoint = checkType === 'multi' ? '/check-multi' : '/check';
+                const response = await fetch(apiUrl + endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayResults(data, checkType);
+                } else {
+                    displayError(data.error || 'Unknown error occurred');
+                }
+            } catch (error) {
+                displayError('Network error: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+                checkBtn.disabled = false;
+            }
+        }
+
+        function displayResults(data, checkType) {
+            const resultsContent = document.getElementById('resultsContent');
+            const results = document.getElementById('results');
+
+            if (checkType === 'multi') {
+                resultsContent.innerHTML = generateMultiRegionResults(data);
+            } else {
+                resultsContent.innerHTML = generateSingleRegionResults(data);
+            }
+
+            results.style.display = 'block';
+        }
+
+        function generateSingleRegionResults(data) {
+            const statusClass = getStatusClass(data.status);
+            const statusIcon = getStatusIcon(data.status);
+            
+            return `
+                <div class="result-card">
+                    <h3>${statusIcon} ${data.domain}</h3>
+                    <div style="margin: 15px 0;">
+                        <span class="status-badge ${statusClass}">${data.status}</span>
+                        <span class="response-time">${data.response_time_ms}ms</span>
+                    </div>
+                    <p><strong>Region:</strong> ${data.region}</p>
+                    <p><strong>Timestamp:</strong> ${new Date(data.timestamp).toLocaleString()}</p>
+                    <p><strong>Summary:</strong> ${data.summary}</p>
+                    
+                    <div class="result-grid">
+                        ${generateDetailedChecks(data.detailed_checks)}
+                    </div>
+                    
+                    ${data.external_checks ? generateExternalChecks(data.external_checks) : ''}
+                </div>
+            `;
+        }
+
+        function generateMultiRegionResults(data) {
+            const statusClass = getStatusClass(data.overall_status);
+            const statusIcon = getStatusIcon(data.overall_status);
+            
+            let html = `
+                <div class="result-card">
+                    <h3>${statusIcon} Multi-Region Status for ${data.url}</h3>
+                    <div style="margin: 15px 0;">
+                        <span class="status-badge ${statusClass}">${data.overall_status}</span>
+                        <span style="margin-left: 15px;">${data.regions_up}/${data.total_regions} regions up</span>
+                    </div>
+                    <p><strong>Analysis:</strong> ${data.analysis}</p>
+                    <p><strong>Timestamp:</strong> ${new Date(data.timestamp).toLocaleString()}</p>
+                </div>
+            `;
+
+            data.results.forEach((result, index) => {
+                html += `
+                    <div class="result-card">
+                        <h4>Region ${index + 1}: ${result.region}</h4>
+                        <div style="margin: 10px 0;">
+                            <span class="status-badge ${getStatusClass(result.status)}">${result.status}</span>
+                            <span class="response-time">${result.response_time_ms}ms</span>
+                        </div>
+                        <div class="result-grid">
+                            ${generateDetailedChecks(result.detailed_checks)}
+                        </div>
+                    </div>
+                `;
+            });
+
+            return html;
+        }
+
+        function generateDetailedChecks(checks) {
+            return `
+                <div class="check-result">
+                    <h4>🔍 DNS Resolution</h4>
+                    <div class="check-details">
+                        <p><strong>Status:</strong> ${checks.dns.overall_status}</p>
+                        <p><strong>Success:</strong> ${checks.dns.success_count}/${checks.dns.total_servers} servers</p>
+                        ${checks.dns.results.map(r => 
+                            `<div>• ${r.dns_server}: ${r.status} ${r.ip_address ? `(${r.ip_address})` : ''}</div>`
+                        ).join('')}
+                    </div>
+                </div>
+                
+                <div class="check-result">
+                    <h4>🌐 HTTP Response</h4>
+                    <div class="check-details">
+                        <p><strong>Status:</strong> ${checks.http.status}</p>
+                        ${checks.http.status_code ? `<p><strong>Status Code:</strong> ${checks.http.status_code}</p>` : ''}
+                        ${checks.http.response_time_ms ? `<p><strong>Response Time:</strong> ${checks.http.response_time_ms}ms</p>` : ''}
+                        ${checks.http.content_length ? `<p><strong>Content Length:</strong> ${checks.http.content_length} bytes</p>` : ''}
+                        ${checks.http.redirected ? `<p><strong>Redirected to:</strong> ${checks.http.final_url}</p>` : ''}
+                        ${checks.http.error ? `<p><strong>Error:</strong> ${checks.http.error}</p>` : ''}
+                    </div>
+                </div>
+                
+                <div class="check-result">
+                    <h4>🔌 Port Connectivity</h4>
+                    <div class="check-details">
+                        <p><strong>Port:</strong> ${checks.port.port}</p>
+                        <p><strong>Status:</strong> ${checks.port.status}</p>
+                        ${checks.port.response_time_ms ? `<p><strong>Response Time:</strong> ${checks.port.response_time_ms}ms</p>` : ''}
+                        ${checks.port.error ? `<p><strong>Error:</strong> ${checks.port.error}</p>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateExternalChecks(external) {
+            let html = '<div class="external-checks"><h4>🔍 External Validation</h4>';
+            
+            Object.entries(external).forEach(([service, result]) => {
+                html += `
+                    <div class="external-check">
+                        <strong>${service}:</strong> 
+                        <span class="status-badge ${getStatusClass(result.status)}">${result.status}</span>
+                        ${result.message ? `<br><small>${result.message}</small>` : ''}
+                        ${result.error ? `<br><small>Error: ${result.error}</small>` : ''}
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            return html;
+        }
+
+        function getStatusClass(status) {
+            switch(status) {
+                case 'up': return 'status-up';
+                case 'down': return 'status-down';
+                case 'partial': return 'status-partial';
+                case 'mixed': return 'status-mixed';
+                default: return 'status-partial';
+            }
+        }
+
+        function getStatusIcon(status) {
+            switch(status) {
+                case 'up': return '✅';
+                case 'down': return '❌';
+                case 'partial': return '⚠️';
+                case 'mixed': return '🔄';
+                default: return '❓';
+            }
+        }
+
+        function displayError(message) {
+            const resultsContent = document.getElementById('resultsContent');
+            const results = document.getElementById('results');
+            
+            resultsContent.innerHTML = `
+                <div class="error">
+                    <h3>❌ Error</h3>
+                    <p>${message}</p>
+                </div>
+            `;
+            
+            results.style.display = 'block';
+        }
+
+        function clearResults() {
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('urlInput').value = '';
+        }
+
+        // Allow Enter key to trigger check
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkWebsite();
+            }
+        });
+
+        // Auto-focus on URL input
+        document.getElementById('urlInput').focus();
+    </script>
+</body>
+</html>
