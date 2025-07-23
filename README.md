@@ -115,29 +115,6 @@ npm start
 
 ---
 
-## 🔑 Securing Your AWS Keys
 
-1. **Never** commit them in source.  
-2. Use `aws configure` (writes to `~/.aws/credentials`).  
-3. If you need project‑specific vars, use a `.env` file and add it to `.gitignore`.  
-4. In CI/CD (e.g. GitHub Actions), add your keys under **Settings → Secrets**, then:
-
-   ```yaml
-   # .github/workflows/deploy.yml
-   - uses: aws-actions/configure-aws-credentials@v2
-     with:
-       aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
-       aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-       aws-region:            us-east-2
-   ```
-
----
-
-## 🎯 What’s Next
-
-- Hook up a custom domain via Route 53 & CloudFront.  
-- Add authentication/authorization.  
-- Persist historical checks in DynamoDB table.  
-- Dockerize the React app for uniform local dev.  
 
 
