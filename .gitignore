@@ -1,0 +1,21 @@
+# Environment variables and secrets — never commit these
+.env
+*.csv
+
+# Frontend dependencies and build output
+frontend/node_modules/
+frontend/dist/
+
+# Backend build artifacts
+backend/.aws-sam/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Mac system files
+.DS_Store
+
+# VS Code
+.vscode/

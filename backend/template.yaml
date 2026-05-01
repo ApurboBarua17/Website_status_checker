@@ -1,0 +1,113 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Website Status Checker
+
+Parameters:
+  Environment:
+    Type: String
+    Default: "dev"
+    Description: Environment name (dev, staging, prod)
+
+Globals:
+  Function:
+    Timeout: 15
+    MemorySize: 256
+    Runtime: python3.9
+
+Resources:
+  # DynamoDB table for caching
+  CacheTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: website-status-cache
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: url
+          AttributeType: S
+        - AttributeName: type
+          AttributeType: S
+      KeySchema:
+        - AttributeName: url
+          KeyType: HASH
+        - AttributeName: type
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
+  # API Gateway with CORS
+  WebsiteStatusApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: website-status-api
+      StageName: Prod
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+        MaxAge: "'600'"
+
+  # Single region checker function
+  WebsiteStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: website-status-checker
+      CodeUri: .
+      Handler: lambda_function.lambda_handler
+      Environment:
+        Variables:
+          CACHE_TABLE_NAME: !Ref CacheTable
+          ENVIRONMENT: !Ref Environment
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CacheTable
+      Events:
+        CheckWebsite:
+          Type: Api
+          Properties:
+            RestApiId: !Ref WebsiteStatusApi
+            Path: /check
+            Method: post
+
+  # Multi-region coordinator function
+  MultiRegionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: website-status-multi-region
+      CodeUri: .
+      Handler: lambda_function.multi_region_check
+      Environment:
+        Variables:
+          CACHE_TABLE_NAME: !Ref CacheTable
+          ENVIRONMENT: !Ref Environment
+          OTHER_REGIONS: "us-west-2,eu-west-1"
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CacheTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - lambda:InvokeFunction
+              Resource: 
+                - !Sub "arn:aws:lambda:*:${AWS::AccountId}:function:website-status-checker-*"
+      Events:
+        MultiRegionCheck:
+          Type: Api
+          Properties:
+            RestApiId: !Ref WebsiteStatusApi
+            Path: /check-multi
+            Method: post
+
+Outputs:
+  WebsiteStatusApiUrl:
+    Description: "API Gateway endpoint URL for Website Status Checker"
+    Value: !Sub "https://${WebsiteStatusApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"
+  
+  SingleCheckEndpoint:
+    Description: "Single region check endpoint"
+    Value: !Sub "https://${WebsiteStatusApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/check"
+    
+  MultiRegionEndpoint:
+    Description: "Multi-region check endpoint"
+    Value: !Sub "https://${WebsiteStatusApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/check-multi"
